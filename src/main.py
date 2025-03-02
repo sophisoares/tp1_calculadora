@@ -7,34 +7,42 @@ def main(page: ft.Page):
     page.vertical_alignment = "center"
     page.bgcolor = ft.Colors.BLACK
 
-    
     current_expression = ""
     result_display = ft.Text(value="0", color=ft.Colors.WHITE, size=20)
     expression_display = ft.Text(value="", color=ft.Colors.WHITE, size=14)
+    clear_button = ft.ElevatedButton(text="AC", on_click=None)  
 
-    
+
     def calculate_expression():
         nonlocal current_expression
         try:
-            result = N(sympify(current_expression), 10)  # Avalia a expressão com 10 dígitos de precisão
+            result = N(sympify(current_expression), 10)  
             result_display.value = str(result)
+            clear_button.text = "AC"  
+            page.update()
         except Exception as e:
             result_display.value = "Erro"
-        page.update()
+            page.update()
 
     
     def update_expression(value):
         nonlocal current_expression
         current_expression += value
         expression_display.value = current_expression
+        clear_button.text = "C"  
         page.update()
 
     
     def clear_expression():
         nonlocal current_expression
-        current_expression = ""
-        expression_display.value = ""
-        result_display.value = "0"
+        if clear_button.text == "AC":
+            current_expression = ""
+            expression_display.value = ""
+            result_display.value = "0"
+        else:
+            current_expression = current_expression[:-1]  
+            expression_display.value = current_expression
+        clear_button.text = "AC" if not current_expression else "C"  
         page.update()
 
     
@@ -63,6 +71,8 @@ def main(page: ft.Page):
             self.bgcolor = ft.Colors.BLUE_GREY_100
             self.color = ft.Colors.BLACK
 
+    clear_button = ExtraActionButton(text="AC", on_click=lambda e: clear_expression())
+
     page.add(
         ft.Container(
             width=350,
@@ -75,8 +85,8 @@ def main(page: ft.Page):
                     ft.Row(controls=[result_display], alignment="end"),
                     ft.Row(
                         controls=[
-                            ExtraActionButton(text="AC", on_click=lambda e: clear_expression()),
-                            ExtraActionButton(text="⬅️", on_click=lambda e: update_expression("⬅️")),
+                            clear_button,
+                            ExtraActionButton(text="+/-", on_click=lambda e: update_expression("*-1")), #Voltei com o inverter sinal 
                             ExtraActionButton(text="%", on_click=lambda e: update_expression("%")),
                             ActionButton(text="/", on_click=lambda e: update_expression("/")),
                         ]
