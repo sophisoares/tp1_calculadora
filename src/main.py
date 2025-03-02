@@ -17,7 +17,10 @@ def main(page: ft.Page):
         nonlocal current_expression
         try:
             result = N(sympify(current_expression), 10)  
-            result_display.value = str(result)
+            
+            result_str = "{:.10f}".format(float(result))  
+            result_str = result_str.rstrip("0").rstrip(".") if "." in result_str else result_str  
+            result_display.value = result_str
             clear_button.text = "AC"  
             page.update()
         except Exception as e:
