@@ -16,7 +16,7 @@ def main(page: ft.Page):
         nonlocal current_expression
         try:
             result = N(sympify(current_expression), 10)  
-            result_str = "{:.10f}".format(float(result))
+            result_str = "{:.10f}".format(float(result))  
             result_str = result_str.rstrip("0").rstrip(".") if "." in result_str else result_str  
             result_display.value = result_str
             clear_button.text = "AC"  
@@ -39,10 +39,21 @@ def main(page: ft.Page):
             expression_display.value = ""
             result_display.value = "0"
         else:
-            current_expression = current_expression[:-1]  
+            current_expression = current_expression[:-1] 
             expression_display.value = current_expression
         clear_button.text = "AC" if not current_expression else "C" 
         page.update()
+
+   
+    def clear_entry():
+        nonlocal current_expression
+        if current_expression:
+            
+            current_expression = current_expression.rstrip("0123456789.")  
+            current_expression = current_expression.rstrip("+-*/%^!()") 
+            expression_display.value = current_expression
+            result_display.value = "0" if not current_expression else result_display.value
+            page.update()
 
     def invert_sign():
         nonlocal current_expression
@@ -100,14 +111,14 @@ def main(page: ft.Page):
             result_display.value = "Erro"
             page.update()
 
-   
+    
     def toggle_parentheses(button):
         if button.text == "(":
-            update_expression("(") 
-            button.text = ")" 
+            update_expression("(")
+            button.text = ")"  
         else:
-            update_expression(")")  
-            button.text = "(" 
+            update_expression(")")
+            button.text = "("  
         page.update()
 
     class CalcButton(ft.ElevatedButton):
@@ -133,8 +144,11 @@ def main(page: ft.Page):
 
     clear_button = ExtraActionButton(text="AC", on_click=lambda e: clear_expression())
 
-    
+    # Botão de parênteses alternado
     parentheses_button = ExtraActionButton(text="(", on_click=lambda e: toggle_parentheses(parentheses_button))
+
+    # Botão "CE" (Clear Entry)
+    clear_entry_button = ExtraActionButton(text="CE", on_click=lambda e: clear_entry())
 
     page.add(
         ft.Container(
@@ -148,7 +162,8 @@ def main(page: ft.Page):
                     ft.Row(controls=[result_display], alignment="end"),
                     ft.Row(
                         controls=[
-                            
+                            clear_button,  
+                            clear_entry_button,  
                             ExtraActionButton(text="+/-", on_click=lambda e: invert_sign()),
                             ExtraActionButton(text="%", on_click=lambda e: update_expression("%")),
                             ExtraActionButton(text="!", on_click=lambda e: calculate_factorial()),
@@ -161,12 +176,10 @@ def main(page: ft.Page):
                             ExtraActionButton(text="1/x", on_click=lambda e: calculate_inverse()),
                             ExtraActionButton(text="x^y", on_click=lambda e: update_expression("^")),
                             ActionButton(text="/", on_click=lambda e: update_expression("/")),
-                            
                         ]
                     ),
                     ft.Row(
                         controls=[
-                             
                             DigitButton(text="7"),
                             DigitButton(text="8"),
                             DigitButton(text="9"),
@@ -191,8 +204,7 @@ def main(page: ft.Page):
                     ),
                     ft.Row(
                         controls=[
-                            clear_button,
-                            DigitButton(text="0"),
+                            DigitButton(text="0", expand=2),
                             DigitButton(text="."),
                             ActionButton(text="=", on_click=lambda e: calculate_expression()),
                         ]
