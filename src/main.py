@@ -1,5 +1,8 @@
 import flet as ft
 from sympy import sympify, N, sqrt, factorial
+from datetime import datetime
+import json
+import os
 
 def main(page: ft.Page):
     page.title = "Calc App"
@@ -10,26 +13,86 @@ def main(page: ft.Page):
     current_expression = ""
     result_display = ft.Text(value="0", color=ft.Colors.WHITE, size=20)
     expression_display = ft.Text(value="", color=ft.Colors.WHITE, size=14)
-    clear_button = ft.ElevatedButton(text="AC", on_click=None) 
+    clear_button = ft.ElevatedButton(text="AC", on_click=None)
+    history = []
+    history_visible = False
+    history_file = "history.json"
+
+    def load_history():
+        if os.path.exists(history_file):
+            with open(history_file, "r") as file:
+                return json.load(file)
+        return []
+
+    def save_history():
+        with open(history_file, "w") as file:
+            json.dump(history, file)
 
     def calculate_expression():
         nonlocal current_expression
         try:
-            result = N(sympify(current_expression), 10)  
-            result_str = "{:.10f}".format(float(result))  
-            result_str = result_str.rstrip("0").rstrip(".") if "." in result_str else result_str  
-            result_display.value = result_str
-            clear_button.text = "AC"  
+            
+            if "%" in current_expression:
+                value = current_expression.replace("%", "")
+                result = N(sympify(value) / 100, 10) 
+                result_str = "{:.10f}".format(float(result))
+                result_str = result_str.rstrip("0").rstrip(".") if "." in result_str else result_str
+                result_display.value = result_str
+                add_to_history(current_expression, result_str)
+                current_expression = result_str  
+            else:
+                expr = current_expression.replace("√", "sqrt")
+                result = N(sympify(expr), 10)
+                result_str = "{:.10f}".format(float(result))
+                result_str = result_str.rstrip("0").rstrip(".") if "." in result_str else result_str
+                result_display.value = result_str
+                add_to_history(current_expression, result_str)
+            clear_button.text = "AC"
             page.update()
         except Exception as e:
             result_display.value = "Erro"
             page.update()
 
+    def add_to_history(expression, result):
+        history.insert(0, {
+            "index": len(history) + 1,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "expression": expression,
+            "result": result
+        })
+        save_history()
+        update_history_display()
+
+    def update_history_display():
+        history_column.controls.clear()
+        for item in history:
+            history_column.controls.append(
+                ft.Row(
+                    controls=[
+                        ft.Text(f"{item['index']}. {item['timestamp']}", color=ft.Colors.WHITE, size=12),
+                        ft.Text(f"{item['expression']} = {item['result']}", color=ft.Colors.WHITE, size=12),
+                        ft.IconButton(icon=ft.icons.DELETE, on_click=lambda e, item=item: delete_history_item(item)),
+                    ]
+                )
+            )
+        page.update()
+
+    def delete_history_item(item):
+        history.remove(item)
+        save_history()
+        update_history_display()
+
+    def toggle_history():
+        nonlocal history_visible
+        history_visible = not history_visible
+        history_container.visible = history_visible
+        page.update()
+
     def update_expression(value):
         nonlocal current_expression
         current_expression += value
         expression_display.value = current_expression
-        clear_button.text = "C"  
+        clear_button.text = "C"
         page.update()
 
     def clear_expression():
@@ -39,18 +102,16 @@ def main(page: ft.Page):
             expression_display.value = ""
             result_display.value = "0"
         else:
-            current_expression = current_expression[:-1] 
+            current_expression = current_expression[:-1]
             expression_display.value = current_expression
-        clear_button.text = "AC" if not current_expression else "C" 
+        clear_button.text = "AC" if not current_expression else "C"
         page.update()
 
-   
     def clear_entry():
         nonlocal current_expression
         if current_expression:
-            
-            current_expression = current_expression.rstrip("0123456789.")  
-            current_expression = current_expression.rstrip("+-*/%^!()") 
+            current_expression = current_expression.rstrip("0123456789.")
+            current_expression = current_expression.rstrip("+-*/%^!()")
             expression_display.value = current_expression
             result_display.value = "0" if not current_expression else result_display.value
             page.update()
@@ -68,13 +129,16 @@ def main(page: ft.Page):
 
     def calculate_sqrt():
         nonlocal current_expression
-        try:
-            result = sqrt(sympify(current_expression))
-            current_expression = str(result)
+        if current_expression:
+            current_expression = f"√({current_expression})"
             expression_display.value = current_expression
             page.update()
-        except Exception as e:
-            result_display.value = "Erro"
+
+    def calculate_percentage():
+        nonlocal current_expression
+        if current_expression:
+            current_expression += "%"
+            expression_display.value = current_expression
             page.update()
 
     def calculate_inverse():
@@ -111,14 +175,13 @@ def main(page: ft.Page):
             result_display.value = "Erro"
             page.update()
 
-    
     def toggle_parentheses(button):
         if button.text == "(":
             update_expression("(")
-            button.text = ")"  
+            button.text = ")"
         else:
             update_expression(")")
-            button.text = "("  
+            button.text = "("
         page.update()
 
     class CalcButton(ft.ElevatedButton):
@@ -143,12 +206,28 @@ def main(page: ft.Page):
             super().__init__(text, on_click=on_click, bgcolor=ft.Colors.BLUE_GREY_100, color=ft.Colors.BLACK)
 
     clear_button = ExtraActionButton(text="AC", on_click=lambda e: clear_expression())
-
-    # Botão de parênteses alternado
-    parentheses_button = ExtraActionButton(text="(", on_click=lambda e: toggle_parentheses(parentheses_button))
-
-    # Botão "CE" (Clear Entry)
     clear_entry_button = ExtraActionButton(text="CE", on_click=lambda e: clear_entry())
+    parentheses_button = ExtraActionButton(text="(", on_click=lambda e: toggle_parentheses(parentheses_button))
+    history_button = ExtraActionButton(text="Histórico", on_click=lambda e: toggle_history())
+
+    history = load_history()
+    history_column = ft.Column(scroll=ft.ScrollMode.ALWAYS)
+    history_container = ft.Container(
+        content=ft.Column(
+            controls=[
+                ft.Text("Histórico", color=ft.Colors.WHITE, size=16),
+                ft.ListView(
+                    controls=[history_column],
+                    height=200,
+                    spacing=10,
+                )
+            ]
+        ),
+        visible=False,
+        padding=10,
+        bgcolor=ft.Colors.BLACK,
+        border_radius=ft.border_radius.all(10),
+    )
 
     page.add(
         ft.Container(
@@ -162,12 +241,12 @@ def main(page: ft.Page):
                     ft.Row(controls=[result_display], alignment="end"),
                     ft.Row(
                         controls=[
-                            clear_button,  
-                            clear_entry_button,  
+                            clear_button,
+                            clear_entry_button,
                             ExtraActionButton(text="+/-", on_click=lambda e: invert_sign()),
-                            ExtraActionButton(text="%", on_click=lambda e: update_expression("%")),
+                            ExtraActionButton(text="%", on_click=lambda e: calculate_percentage()),
                             ExtraActionButton(text="!", on_click=lambda e: calculate_factorial()),
-                            parentheses_button, 
+                            parentheses_button,
                         ]
                     ),
                     ft.Row(
@@ -209,6 +288,8 @@ def main(page: ft.Page):
                             ActionButton(text="=", on_click=lambda e: calculate_expression()),
                         ]
                     ),
+                    history_button,
+                    history_container,
                 ]
             ),
         )
