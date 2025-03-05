@@ -1,5 +1,5 @@
 import flet as ft
-from sympy import sympify, N
+from sympy import sympify, N, sqrt, factorial
 
 def main(page: ft.Page):
     page.title = "Calc App"
@@ -10,15 +10,13 @@ def main(page: ft.Page):
     current_expression = ""
     result_display = ft.Text(value="0", color=ft.Colors.WHITE, size=20)
     expression_display = ft.Text(value="", color=ft.Colors.WHITE, size=14)
-    clear_button = ft.ElevatedButton(text="AC", on_click=None)  
-
+    clear_button = ft.ElevatedButton(text="AC", on_click=None) 
 
     def calculate_expression():
         nonlocal current_expression
         try:
             result = N(sympify(current_expression), 10)  
-            
-            result_str = "{:.10f}".format(float(result))  
+            result_str = "{:.10f}".format(float(result))
             result_str = result_str.rstrip("0").rstrip(".") if "." in result_str else result_str  
             result_display.value = result_str
             clear_button.text = "AC"  
@@ -27,7 +25,6 @@ def main(page: ft.Page):
             result_display.value = "Erro"
             page.update()
 
-    
     def update_expression(value):
         nonlocal current_expression
         current_expression += value
@@ -35,7 +32,6 @@ def main(page: ft.Page):
         clear_button.text = "C"  
         page.update()
 
-    
     def clear_expression():
         nonlocal current_expression
         if clear_button.text == "AC":
@@ -45,36 +41,100 @@ def main(page: ft.Page):
         else:
             current_expression = current_expression[:-1]  
             expression_display.value = current_expression
-        clear_button.text = "AC" if not current_expression else "C"  
+        clear_button.text = "AC" if not current_expression else "C" 
         page.update()
 
-    
+    def invert_sign():
+        nonlocal current_expression
+        if current_expression:
+            try:
+                current_expression = f"({current_expression})*-1"
+                expression_display.value = current_expression
+                page.update()
+            except Exception as e:
+                result_display.value = "Erro"
+                page.update()
+
+    def calculate_sqrt():
+        nonlocal current_expression
+        try:
+            result = sqrt(sympify(current_expression))
+            current_expression = str(result)
+            expression_display.value = current_expression
+            page.update()
+        except Exception as e:
+            result_display.value = "Erro"
+            page.update()
+
+    def calculate_inverse():
+        nonlocal current_expression
+        try:
+            result = 1 / sympify(current_expression)
+            current_expression = str(result)
+            expression_display.value = current_expression
+            page.update()
+        except Exception as e:
+            result_display.value = "Erro"
+            page.update()
+
+    def calculate_power():
+        nonlocal current_expression
+        try:
+            base, exponent = current_expression.split("^")
+            result = sympify(base) ** sympify(exponent)
+            current_expression = str(result)
+            expression_display.value = current_expression
+            page.update()
+        except Exception as e:
+            result_display.value = "Erro"
+            page.update()
+
+    def calculate_factorial():
+        nonlocal current_expression
+        try:
+            result = factorial(sympify(current_expression))
+            current_expression = str(result)
+            expression_display.value = current_expression
+            page.update()
+        except Exception as e:
+            result_display.value = "Erro"
+            page.update()
+
+   
+    def toggle_parentheses(button):
+        if button.text == "(":
+            update_expression("(") 
+            button.text = ")" 
+        else:
+            update_expression(")")  
+            button.text = "(" 
+        page.update()
+
     class CalcButton(ft.ElevatedButton):
-        def __init__(self, text, expand=1, on_click=None):
+        def __init__(self, text, expand=1, on_click=None, bgcolor=ft.Colors.WHITE24, color=ft.Colors.WHITE):
             super().__init__()
             self.text = text
             self.expand = expand
             self.on_click = on_click
+            self.bgcolor = bgcolor
+            self.color = color
 
     class DigitButton(CalcButton):
         def __init__(self, text, expand=1):
-            CalcButton.__init__(self, text, expand, on_click=lambda e: update_expression(text))
-            self.bgcolor = ft.Colors.WHITE24
-            self.color = ft.Colors.WHITE
+            super().__init__(text, expand, on_click=lambda e: update_expression(text), bgcolor=ft.Colors.WHITE24, color=ft.Colors.WHITE)
 
     class ActionButton(CalcButton):
         def __init__(self, text, on_click=None):
-            CalcButton.__init__(self, text, on_click=on_click)
-            self.bgcolor = ft.Colors.ORANGE
-            self.color = ft.Colors.WHITE
+            super().__init__(text, on_click=on_click, bgcolor=ft.Colors.ORANGE, color=ft.Colors.WHITE)
 
     class ExtraActionButton(CalcButton):
         def __init__(self, text, on_click=None):
-            CalcButton.__init__(self, text, on_click=on_click)
-            self.bgcolor = ft.Colors.BLUE_GREY_100
-            self.color = ft.Colors.BLACK
+            super().__init__(text, on_click=on_click, bgcolor=ft.Colors.BLUE_GREY_100, color=ft.Colors.BLACK)
 
     clear_button = ExtraActionButton(text="AC", on_click=lambda e: clear_expression())
+
+    
+    parentheses_button = ExtraActionButton(text="(", on_click=lambda e: toggle_parentheses(parentheses_button))
 
     page.add(
         ft.Container(
@@ -88,14 +148,25 @@ def main(page: ft.Page):
                     ft.Row(controls=[result_display], alignment="end"),
                     ft.Row(
                         controls=[
-                            clear_button,
-                            ExtraActionButton(text="+/-", on_click=lambda e: update_expression("*-1")), #Voltei com o inverter sinal 
+                            
+                            ExtraActionButton(text="+/-", on_click=lambda e: invert_sign()),
                             ExtraActionButton(text="%", on_click=lambda e: update_expression("%")),
-                            ActionButton(text="/", on_click=lambda e: update_expression("/")),
+                            ExtraActionButton(text="!", on_click=lambda e: calculate_factorial()),
+                            parentheses_button, 
                         ]
                     ),
                     ft.Row(
                         controls=[
+                            ExtraActionButton(text="√", on_click=lambda e: calculate_sqrt()),
+                            ExtraActionButton(text="1/x", on_click=lambda e: calculate_inverse()),
+                            ExtraActionButton(text="x^y", on_click=lambda e: update_expression("^")),
+                            ActionButton(text="/", on_click=lambda e: update_expression("/")),
+                            
+                        ]
+                    ),
+                    ft.Row(
+                        controls=[
+                             
                             DigitButton(text="7"),
                             DigitButton(text="8"),
                             DigitButton(text="9"),
@@ -120,7 +191,8 @@ def main(page: ft.Page):
                     ),
                     ft.Row(
                         controls=[
-                            DigitButton(text="0", expand=2),
+                            clear_button,
+                            DigitButton(text="0"),
                             DigitButton(text="."),
                             ActionButton(text="=", on_click=lambda e: calculate_expression()),
                         ]
