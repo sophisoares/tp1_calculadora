@@ -34,7 +34,10 @@ def main(page: ft.Page):
             if num.is_integer():
                 return "{:,.0f}".format(int(num)).replace(",", ".")
             else:
-                return "{:,.10f}".format(num).replace(",", "x").replace(".", ",").replace("x", ".")
+                parts = "{:,.10f}".format(num).split(".")
+                integer_part = parts[0].replace(",", ".")
+                decimal_part = parts[1].rstrip("0")
+                return f"{integer_part},{decimal_part}" if decimal_part else integer_part
         except ValueError:
             return number
 
@@ -50,11 +53,7 @@ def main(page: ft.Page):
                 current_expression = result_str
             else:
                 expr = current_expression.replace("√", "sqrt")
-                if "^" in expr:
-                    base, exponent = expr.split("^")
-                    result = N(sympify(base) ** sympify(exponent), 10)
-                else:
-                    result = N(sympify(expr), 10)
+                result = N(sympify(expr), 10)
                 result_str = format_number(result)
                 result_display.value = result_str
                 add_to_history(current_expression, result_str)
@@ -121,10 +120,9 @@ def main(page: ft.Page):
     def clear_entry():
         nonlocal current_expression
         if current_expression:
-            current_expression = current_expression.rstrip("0123456789,")
-            current_expression = current_expression.rstrip("+-*/%^!()")
-            expression_display.value = current_expression
-            result_display.value = "0" if not current_expression else result_display.value
+            current_expression = ""
+            expression_display.value = ""
+            result_display.value = "0"
             page.update()
 
     def invert_sign():
@@ -165,25 +163,16 @@ def main(page: ft.Page):
 
     def calculate_power():
         nonlocal current_expression
-        try:
-            base, exponent = current_expression.split("^")
-            result = sympify(base) ** sympify(exponent)
-            current_expression = str(result)
+        if current_expression:
+            current_expression += "^"
             expression_display.value = current_expression
-            page.update()
-        except Exception as e:
-            result_display.value = "Erro"
             page.update()
 
     def calculate_factorial():
         nonlocal current_expression
-        try:
-            result = factorial(sympify(current_expression))
-            current_expression = str(result)
+        if current_expression:
+            current_expression += "!"
             expression_display.value = current_expression
-            page.update()
-        except Exception as e:
-            result_display.value = "Erro"
             page.update()
 
     def toggle_parentheses(button):
@@ -264,7 +253,7 @@ def main(page: ft.Page):
                         controls=[
                             ExtraActionButton(text="√", on_click=lambda e: calculate_sqrt()),
                             ExtraActionButton(text="1/x", on_click=lambda e: calculate_inverse()),
-                            ExtraActionButton(text="x^y", on_click=lambda e: update_expression("^")),
+                            ExtraActionButton(text="x^y", on_click=lambda e: calculate_power()),
                             ActionButton(text="/", on_click=lambda e: update_expression("/")),
                         ]
                     ),
