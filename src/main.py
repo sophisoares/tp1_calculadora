@@ -28,23 +28,34 @@ def main(page: ft.Page):
         with open(history_file, "w") as file:
             json.dump(history, file)
 
+    def format_number(number):
+        try:
+            num = float(number)
+            if num.is_integer():
+                return "{:,.0f}".format(int(num)).replace(",", ".")
+            else:
+                return "{:,.10f}".format(num).replace(",", "x").replace(".", ",").replace("x", ".")
+        except ValueError:
+            return number
+
     def calculate_expression():
         nonlocal current_expression
         try:
-            
             if "%" in current_expression:
                 value = current_expression.replace("%", "")
-                result = N(sympify(value) / 100, 10) 
-                result_str = "{:.10f}".format(float(result))
-                result_str = result_str.rstrip("0").rstrip(".") if "." in result_str else result_str
+                result = N(sympify(value) / 100, 10)
+                result_str = format_number(result)
                 result_display.value = result_str
                 add_to_history(current_expression, result_str)
-                current_expression = result_str  
+                current_expression = result_str
             else:
                 expr = current_expression.replace("√", "sqrt")
-                result = N(sympify(expr), 10)
-                result_str = "{:.10f}".format(float(result))
-                result_str = result_str.rstrip("0").rstrip(".") if "." in result_str else result_str
+                if "^" in expr:
+                    base, exponent = expr.split("^")
+                    result = N(sympify(base) ** sympify(exponent), 10)
+                else:
+                    result = N(sympify(expr), 10)
+                result_str = format_number(result)
                 result_display.value = result_str
                 add_to_history(current_expression, result_str)
             clear_button.text = "AC"
@@ -110,7 +121,7 @@ def main(page: ft.Page):
     def clear_entry():
         nonlocal current_expression
         if current_expression:
-            current_expression = current_expression.rstrip("0123456789.")
+            current_expression = current_expression.rstrip("0123456789,")
             current_expression = current_expression.rstrip("+-*/%^!()")
             expression_display.value = current_expression
             result_display.value = "0" if not current_expression else result_display.value
@@ -284,7 +295,7 @@ def main(page: ft.Page):
                     ft.Row(
                         controls=[
                             DigitButton(text="0", expand=2),
-                            DigitButton(text="."),
+                            DigitButton(text=","),
                             ActionButton(text="=", on_click=lambda e: calculate_expression()),
                         ]
                     ),
