@@ -82,7 +82,9 @@ def main(page: ft.Page):
                         ft.Text(f"{item['index']}. {item['timestamp']}", color=ft.Colors.WHITE, size=12),
                         ft.Text(f"{item['expression']} = {item['result']}", color=ft.Colors.WHITE, size=12),
                         ft.IconButton(icon=ft.icons.DELETE, on_click=lambda e, item=item: delete_history_item(item)),
-                    ]
+                        ft.IconButton(icon=ft.icons.ADD, on_click=lambda e, item=item: use_history_item(item)),
+                    ],
+                    scroll=ft.ScrollMode.ALWAYS,
                 )
             )
         page.update()
@@ -91,6 +93,12 @@ def main(page: ft.Page):
         history.remove(item)
         save_history()
         update_history_display()
+
+    def use_history_item(item):
+        nonlocal current_expression
+        current_expression = item["expression"]
+        expression_display.value = current_expression
+        page.update()
 
     def toggle_history():
         nonlocal history_visible
@@ -213,15 +221,10 @@ def main(page: ft.Page):
     history = load_history()
     history_column = ft.Column(scroll=ft.ScrollMode.ALWAYS)
     history_container = ft.Container(
-        content=ft.Column(
-            controls=[
-                ft.Text("Histórico", color=ft.Colors.WHITE, size=16),
-                ft.ListView(
-                    controls=[history_column],
-                    height=200,
-                    spacing=10,
-                )
-            ]
+        content=ft.ListView(
+            controls=[history_column],
+            height=200,
+            spacing=10,
         ),
         visible=False,
         padding=10,
