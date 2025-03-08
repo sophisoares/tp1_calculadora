@@ -8,6 +8,14 @@ def main(page: ft.Page):
     page.horizontal_alignment = "center"
     page.vertical_alignment = "center"
     page.bgcolor = ft.colors.BLACK
+    page.window_title_bar_hidden = True
+    page.window_frameless = True
+    page.window_width = 350
+    page.window_height = 600
+    page.window_resizable = False
+    page.theme_mode = ft.ThemeMode.DARK
+    page.padding = 20
+    page.window_icon = "calculator.svg"
 
     current_expression = ""
     result_display = ft.Text(value="0", color=ft.colors.WHITE, size=20)
@@ -63,16 +71,16 @@ def main(page: ft.Page):
 
     def add_to_history(expression, result):
         if len(history) >= 10:
-            history.pop()  
+            history.pop()
         for item in history:
-            item["index"] += 1 
+            item["index"] += 1
         history.insert(0, {
-            "index": 1, 
+            "index": 1,
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "expression": expression,
             "result": result
         })
-        save_history() 
+        save_history()
         update_history_display()
 
     def update_history_display():
@@ -195,7 +203,7 @@ def main(page: ft.Page):
         page.update()
 
     class CalcButton(ft.ElevatedButton):
-        def __init__(self, text, expand=1, on_click=None, bgcolor=ft.colors.BLACK, color=ft.colors.WHITE):
+        def __init__(self, text, expand=1, on_click=None, bgcolor=ft.colors.GREY_900, color=ft.colors.WHITE):
             super().__init__()
             self.text = text
             self.expand = expand
@@ -206,7 +214,7 @@ def main(page: ft.Page):
             self.shadow = ft.BoxShadow(
                 spread_radius=1,
                 blur_radius=5,
-                color=ft.colors.GREY_900,
+                color=ft.colors.GREY_800,
                 offset=ft.Offset(2, 2),
             )
 
@@ -242,7 +250,7 @@ def main(page: ft.Page):
         shadow=ft.BoxShadow(
             spread_radius=1,
             blur_radius=5,
-            color=ft.colors.GREY_900,
+            color=ft.colors.GREY_800,
             offset=ft.Offset(2, 2),
         ),
     )
@@ -256,7 +264,7 @@ def main(page: ft.Page):
             shadow=ft.BoxShadow(
                 spread_radius=1,
                 blur_radius=10,
-                color=ft.colors.GREY_900,
+                color=ft.colors.GREY_800,
                 offset=ft.Offset(4, 4),
             ),
             content=ft.Column(
@@ -319,4 +327,4 @@ def main(page: ft.Page):
         )
     )
 
-ft.app(target=main)
+ft.app(target=main, view=ft.WEB_BROWSER, host="0.0.0.0", port=8080)
