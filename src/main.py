@@ -4,13 +4,19 @@ from datetime import datetime
 import json
 
 async def main(page: ft.Page):
+    
     page.title = "Calc App"
     page.horizontal_alignment = "center"
     page.vertical_alignment = "center"
     page.bgcolor = ft.Colors.BLACK
-    page.window_favicon_url = "favicon.ico"  
+    page.window_favicon_url = "calculator.svg"
 
-    page.add(ft.Text("Carregando...", color=ft.Colors.WHITE))
+    
+    loading_text = ft.Text("Carregando...", color=ft.Colors.WHITE)
+    await page.add_async(loading_text)
+
+    page.controls.remove(loading_text)
+    await page.update_async()
 
     current_expression = ""
     result_display = ft.Text(value="0", color=ft.Colors.WHITE, size=20)
@@ -69,7 +75,7 @@ async def main(page: ft.Page):
             history.pop()  
         
         for item in history:
-            item["index"] += 1  
+            item["index"] += 1 
         
         history.insert(0, {
             "index": 1,  
@@ -78,7 +84,7 @@ async def main(page: ft.Page):
             "result": result
         })
         
-        await save_history()  
+        await save_history()
         await update_history_display()  
 
     async def update_history_display():
