@@ -1,13 +1,16 @@
 import flet as ft
-from sympy import sympify, N
+from sympy import sympify, N, sqrt, factorial
 from datetime import datetime
 import json
 
-def main(page: ft.Page):
+async def main(page: ft.Page):
     page.title = "Calc App"
     page.horizontal_alignment = "center"
     page.vertical_alignment = "center"
     page.bgcolor = ft.Colors.BLACK
+    page.window_favicon_url = "favicon.ico"  
+
+    page.add(ft.Text("Carregando...", color=ft.Colors.WHITE))
 
     current_expression = ""
     result_display = ft.Text(value="0", color=ft.Colors.WHITE, size=20)
@@ -17,14 +20,14 @@ def main(page: ft.Page):
     history_visible = False
     history_key = "calc_history"
 
-    def load_history():
-        history_json = page.client_storage.get(history_key)
+    async def load_history():
+        history_json = await page.client_storage.get_async(history_key)
         if history_json:
             return json.loads(history_json)
         return []
 
-    def save_history():
-        page.client_storage.set(history_key, json.dumps(history))
+    async def save_history():
+        await page.client_storage.set_async(history_key, json.dumps(history))
 
     def format_number(number):
         try:
@@ -39,7 +42,7 @@ def main(page: ft.Page):
         except ValueError:
             return number
 
-    def calculate_expression():
+    async def calculate_expression():
         nonlocal current_expression
         try:
             if "%" in current_expression:
@@ -47,39 +50,38 @@ def main(page: ft.Page):
                 result = N(sympify(value) / 100, 10)
                 result_str = format_number(result)
                 result_display.value = result_str
-                add_to_history(current_expression, result_str)
+                await add_to_history(current_expression, result_str)
                 current_expression = result_str
             else:
                 expr = current_expression.replace("√", "sqrt")
                 result = N(sympify(expr), 10)
                 result_str = format_number(result)
                 result_display.value = result_str
-                add_to_history(current_expression, result_str)
+                await add_to_history(current_expression, result_str)
             clear_button.text = "AC"
-            page.update()
+            await page.update_async()
         except Exception as e:
             result_display.value = "Erro"
-            page.update()
+            await page.update_async()
 
-    def add_to_history(expression, result):
-       
+    async def add_to_history(expression, result):
         if len(history) >= 10:
-            history.pop() 
+            history.pop()  
         
         for item in history:
-            item["index"] += 1
+            item["index"] += 1  
         
         history.insert(0, {
-            "index": 1, 
+            "index": 1,  
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "expression": expression,
             "result": result
         })
         
-        save_history() 
-        update_history_display()  
+        await save_history()  
+        await update_history_display()  
 
-    def update_history_display():
+    async def update_history_display():
         history_column.controls.clear()
         for item in history:
             history_column.controls.append(
@@ -93,33 +95,33 @@ def main(page: ft.Page):
                     scroll=ft.ScrollMode.ALWAYS,
                 )
             )
-        page.update()
+        await page.update_async()
 
-    def delete_history_item(item):
+    async def delete_history_item(item):
         history.remove(item)
-        save_history()
-        update_history_display()
+        await save_history()
+        await update_history_display()
 
-    def use_history_item(item):
+    async def use_history_item(item):
         nonlocal current_expression
         current_expression = item["expression"]
         expression_display.value = current_expression
-        page.update()
+        await page.update_async()
 
-    def toggle_history():
+    async def toggle_history():
         nonlocal history_visible
         history_visible = not history_visible
         history_container.visible = history_visible
-        page.update()
+        await page.update_async()
 
-    def update_expression(value):
+    async def update_expression(value):
         nonlocal current_expression
         current_expression += value
         expression_display.value = current_expression
         clear_button.text = "C"
-        page.update()
+        await page.update_async()
 
-    def clear_expression():
+    async def clear_expression():
         nonlocal current_expression
         if clear_button.text == "AC":
             current_expression = ""
@@ -129,74 +131,74 @@ def main(page: ft.Page):
             current_expression = current_expression[:-1]
             expression_display.value = current_expression
         clear_button.text = "AC" if not current_expression else "C"
-        page.update()
+        await page.update_async()
 
-    def clear_entry():
+    async def clear_entry():
         nonlocal current_expression
         if current_expression:
             current_expression = ""
             expression_display.value = ""
             result_display.value = "0"
-            page.update()
+            await page.update_async()
 
-    def invert_sign():
+    async def invert_sign():
         nonlocal current_expression
         if current_expression:
             try:
                 current_expression = f"({current_expression})*-1"
                 expression_display.value = current_expression
-                page.update()
+                await page.update_async()
             except Exception as e:
                 result_display.value = "Erro"
-                page.update()
+                await page.update_async()
 
-    def calculate_sqrt():
+    async def calculate_sqrt():
         nonlocal current_expression
         if current_expression:
             current_expression = f"√({current_expression})"
             expression_display.value = current_expression
-            page.update()
+            await page.update_async()
 
-    def calculate_percentage():
+    async def calculate_percentage():
         nonlocal current_expression
         if current_expression:
             current_expression += "%"
             expression_display.value = current_expression
-            page.update()
+            await page.update_async()
 
-    def calculate_inverse():
+    async def calculate_inverse():
         nonlocal current_expression
         try:
             result = 1 / sympify(current_expression)
             current_expression = str(result)
             expression_display.value = current_expression
-            page.update()
+            await page.update_async()
         except Exception as e:
             result_display.value = "Erro"
-            page.update()
+            await page.update_async()
 
-    def calculate_power():
+    async def calculate_power():
         nonlocal current_expression
         if current_expression:
             current_expression += "^"
             expression_display.value = current_expression
-            page.update()
+            await page.update_async()
 
-    def calculate_factorial():
+    async def calculate_factorial():
         nonlocal current_expression
         if current_expression:
             current_expression += "!"
             expression_display.value = current_expression
-            page.update()
+            await page.update_async()
 
-    def toggle_parentheses(button):
+    async def toggle_parentheses(button):
         if button.text == "(":
-            update_expression("(")
+            await update_expression("(")
             button.text = ")"
         else:
-            update_expression(")")
+            await update_expression(")")
             button.text = "("
-        page.update()
+        await page.update_async()
 
     class CalcButton(ft.ElevatedButton):
         def __init__(self, text, expand=1, on_click=None, bgcolor=ft.Colors.WHITE24, color=ft.Colors.WHITE):
@@ -224,7 +226,7 @@ def main(page: ft.Page):
     parentheses_button = ExtraActionButton(text="(", on_click=lambda e: toggle_parentheses(parentheses_button))
     history_button = ExtraActionButton(text="Histórico", on_click=lambda e: toggle_history())
 
-    history = load_history()
+    history = await load_history()
     history_column = ft.Column(scroll=ft.ScrollMode.ALWAYS)
     history_container = ft.Container(
         content=ft.ListView(
@@ -238,7 +240,7 @@ def main(page: ft.Page):
         border_radius=ft.border_radius.all(10),
     )
 
-    page.add(
+    await page.add_async(
         ft.Container(
             width=350,
             bgcolor=ft.Colors.BLACK,
@@ -304,4 +306,4 @@ def main(page: ft.Page):
         )
     )
 
-ft.app(target=main)
+ft.app(target=main, view=ft.WEB_BROWSER, host="0.0.0.0", port=8080)
