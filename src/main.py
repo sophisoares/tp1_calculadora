@@ -1,5 +1,5 @@
 import flet as ft
-from sympy import sympify, N, sqrt, factorial
+from sympy import sympify, N
 from datetime import datetime
 import json
 
