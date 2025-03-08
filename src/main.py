@@ -2,7 +2,6 @@ import flet as ft
 from sympy import sympify, N, sqrt, factorial
 from datetime import datetime
 import json
-import os
 
 def main(page: ft.Page):
     page.title = "Calc App"
@@ -16,17 +15,16 @@ def main(page: ft.Page):
     clear_button = ft.ElevatedButton(text="AC", on_click=None)
     history = []
     history_visible = False
-    history_file = "history.json"
+    history_key = "calc_history"
 
     def load_history():
-        if os.path.exists(history_file):
-            with open(history_file, "r") as file:
-                return json.load(file)
+        history_json = page.client_storage.get(history_key)
+        if history_json:
+            return json.loads(history_json)
         return []
 
     def save_history():
-        with open(history_file, "w") as file:
-            json.dump(history, file)
+        page.client_storage.set(history_key, json.dumps(history))
 
     def format_number(number):
         try:
@@ -64,14 +62,22 @@ def main(page: ft.Page):
             page.update()
 
     def add_to_history(expression, result):
+       
+        if len(history) >= 10:
+            history.pop() 
+        
+        for item in history:
+            item["index"] += 1
+        
         history.insert(0, {
-            "index": len(history) + 1,
+            "index": 1, 
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "expression": expression,
             "result": result
         })
-        save_history()
-        update_history_display()
+        
+        save_history() 
+        update_history_display()  
 
     def update_history_display():
         history_column.controls.clear()
