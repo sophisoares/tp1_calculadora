@@ -1,90 +1,94 @@
-import flet as ft
-from sympy import sympify, N, sqrt, factorial
-from datetime import datetime
-import json
+import flet as ft 
+from sympy import sympify, N
+from datetime import datetime 
+import json 
 
 def main(page: ft.Page):
-    page.title = "Calc App"
+    page.title = "Calculex"
     page.horizontal_alignment = "center"
     page.vertical_alignment = "center"
     page.bgcolor = ft.colors.BLACK
-    page.window_title_bar_hidden = True
-    page.window_frameless = True
-    page.window_width = 350
-    page.window_height = 600
-    page.window_resizable = False
-    page.theme_mode = ft.ThemeMode.DARK
+    #page.window_title_bar_hidden = False
+    #page.window_frameless = True
+    #page.window_width = 300
+    #page.window_height = 600
+    #page.window_resizable = True
+    #page.theme_mode = ft.ThemeMode.LIGHT
     page.padding = 20
-    page.window_icon = "calculator.svg"
+    #page.window_icon = "calculator.svg"
 
     current_expression = ""
-    result_display = ft.Text(value="0", color=ft.colors.WHITE, size=20)
-    expression_display = ft.Text(value="", color=ft.colors.WHITE, size=14)
-    clear_button = ft.ElevatedButton(text="AC", on_click=None)
+    result_display = ft.Text(value="0", color=ft.colors.WHITE, size=20) 
+    expression_display = ft.Text(value="", color=ft.colors.WHITE, size=14) 
+    # clear_button = ft.ElevatedButton(text="AC", on_click=None) 
     history = []
-    history_visible = False
-    history_key = "calc_history"
+    history_visible = False 
+    history_key = "calc_history" 
 
     def load_history():
-        history_json = page.client_storage.get(history_key)
-        if history_json:
-            return json.loads(history_json)
-        return []
+        history_json = page.client_storage.get(history_key) 
+        if history_json: 
+            return json.loads(history_json) 
+        return [] 
 
     def save_history():
-        page.client_storage.set(history_key, json.dumps(history))
+        page.client_storage.set(history_key, json.dumps(history)) #utiliza o dumps para armazenar o conteudo presente na chave dentro do arquivo json, em forma de uma string json
 
     def format_number(number):
         try:
             num = float(number)
             if num.is_integer():
-                return "{:,.0f}".format(int(num)).replace(",", ".")
+                return "{:,.0f}".format(int(num)).replace(",", ".") #esse replace é unicamente utilizado para questões visuais
             else:
                 parts = "{:,.10f}".format(num).split(".")
-                integer_part = parts[0].replace(",", ".")
+                integer_part = parts[0].replace(",", ".") #esse tambem é para qeustões visuais
                 decimal_part = parts[1].rstrip("0")
                 return f"{integer_part},{decimal_part}" if decimal_part else integer_part
+
         except ValueError:
-            return number
+            return "Erro"
+
 
     def calculate_expression():
-        nonlocal current_expression
+        nonlocal current_expression #referenciamos a variavel que é declarada dentro da função main
         try:
+            current_expression = current_expression.replace(",", ".") 
+
             if "%" in current_expression:
-                value = current_expression.replace("%", "")
-                result = N(sympify(value) / 100, 10)
-                result_str = format_number(result)
-                result_display.value = result_str
-                add_to_history(current_expression, result_str)
-                current_expression = result_str
-            else:
-                expr = current_expression.replace("√", "sqrt")
+                value = current_expression.replace("%", "") #retira o simbolo de % e deixa um espaço vazio
+                result = N(sympify(value) / 100, 10) #efetua a conta normalmente com o valor atual
+                result_str = format_number(result) #formata o resultado encontrado
+                result_display.value = result_str #mostra esse resultado no display
+                add_to_history(current_expression, result_str) #adiciona oo calculo no historico
+                current_expression = result_str #no caso da porcentagem atualiza o campo de expressão para, quando dar continuidade no calculo atualiza a expressão para decimal ao invés de manter em porcentagem, é mais para uma questão visual do que outra coisa
+            else: #segue a mesma logica do if
+                expr = current_expression.replace("√", "sqrt") #faz essa troca pra depois utilizar o sympify que vai reconhecer o sqrt como a função utilizada para calcular raiz quadradas e assim efetuar o calculo até 10 casas decimais
                 result = N(sympify(expr), 10)
                 result_str = format_number(result)
                 result_display.value = result_str
                 add_to_history(current_expression, result_str)
-            clear_button.text = "AC"
-            page.update()
-        except Exception as e:
-            result_display.value = "Erro"
-            page.update()
+            clear_button.text = "AC" #modifica o botão da expressão
+            page.update() #atualiza a pagina
+        except Exception as e: #trata das exceções, qualquer expressão mal construida ou um numero mal inserido
+            result_display.value = "Erro" #mostra erro como mensagem
+            page.update() #atualiza a pagina
 
-    def add_to_history(expression, result):
-        if len(history) >= 10:
+    def add_to_history(expression, result): #onde iremos adicionar a expressão e seu devido resultado
+        if len(history) >= 10: #se tiver mais de 10 itens faz pop do ultimo item da lista
             history.pop()
         for item in history:
-            item["index"] += 1
+            item["index"] += 1 #atualiza o indice de cada item do historico, pra quando for adicionado um valor se ajustar conforme a quantidade de objetos
         history.insert(0, {
             "index": 1,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "timestamp": datetime.now().strftime("%Y-%m-%D %H:%M:%S"),
             "expression": expression,
             "result": result
         })
-        save_history()
-        update_history_display()
+        save_history() #faz o jump no arquivo de json, para podermos acessar sempre que reabrimos a aplicação, caso exista alguma informação dela
+        update_history_display() # atualiza visualmente o displau do historico
 
     def update_history_display():
-        history_column.controls.clear()
+        history_column.controls.clear() #entendi mas vou ter que estudar um pouquinho mais sobre
         for item in history:
             history_column.controls.append(
                 ft.Row(
@@ -110,7 +114,7 @@ def main(page: ft.Page):
         expression_display.value = current_expression
         page.update()
 
-    def toggle_history():
+    def toggle_history(): #alterna a visibilidade do historico, se é falso vira true se é true vira falso
         nonlocal history_visible
         history_visible = not history_visible
         history_container.visible = history_visible
@@ -118,28 +122,39 @@ def main(page: ft.Page):
 
     def update_expression(value):
         nonlocal current_expression
-        current_expression += value
-        expression_display.value = current_expression
-        clear_button.text = "C"
+        current_expression += value #adiciona o valor do botão pressionado na expressão
+        expression_display.value = current_expression #mostra a expressão completa no display
+        clear_button.text = "C" #modifica o sinal do botão de AC para C indicando que agora tem algo que pode ser apagado
         page.update()
 
     def clear_expression():
         nonlocal current_expression
-        if clear_button.text == "AC":
+        if clear_button.text == "AC": 
             current_expression = ""
             expression_display.value = ""
             result_display.value = "0"
         else:
-            current_expression = current_expression[:-1]
-            expression_display.value = current_expression
-        clear_button.text = "AC" if not current_expression else "C"
+            current_expression = current_expression[:-1] #faz slicing da string para apagar o ultimo caracter
+            expression_display.value = current_expression #atualiza a expressão 
+        clear_button.text = "AC" if not current_expression else "C" #se a expressão estiver vazia troca pra AC se não mantém como C<
         page.update()
 
     def clear_entry():
+    #    nonlocal current_expression
+    #    if current_expression:
+    #        current_expression = ""
+    #        expression_display.value = ""
+    #        result_display.value = "0"
+    #        page.update()
+
         nonlocal current_expression
         if current_expression:
-            current_expression = ""
-            expression_display.value = ""
+            # Remove espaços e percorre a string de trás pra frente
+            i = len(current_expression) - 1
+            while i >= 0 and (current_expression[i].isdigit() or current_expression[i] in ",."):
+                i -= 1
+            current_expression = current_expression[:i+1]  # mantém tudo até o último operador
+            expression_display.value = current_expression
             result_display.value = "0"
             page.update()
 
@@ -327,4 +342,5 @@ def main(page: ft.Page):
         )
     )
 
-ft.app(target=main, view=ft.WEB_BROWSER, host="0.0.0.0", port=8080)
+ft.app(target=main, view=ft.WEB_BROWSER, host="0.0.0.0", port=8550)
+#ft.app(target=main, view=ft.FLET_APP)
